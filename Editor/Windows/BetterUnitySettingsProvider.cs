@@ -8,6 +8,8 @@ namespace LazyCat.BetterUnity
     public static class BetterUnitySettingsProvider
     {
         static int _selectedModule = 0;
+        static int _renamingBookmarkIdx = -1;
+        static string _renameBuffer     = "";
 
         const float LEFT_W  = 148f;
         const float DIVIDER = 1f;
@@ -457,25 +459,77 @@ namespace LazyCat.BetterUnity
                 }
                 else
                 {
+                    float rowW   = Mathf.Min(w - 4, 380);
+                    float labelW = rowW - 126;  // room for Rename + Delete buttons
+
                     for (int i = 0; i < db.bookmarks.Count; i++)
                     {
-                        var bm    = db.bookmarks[i];
+                        var    bm    = db.bookmarks[i];
                         string scene = Path.GetFileNameWithoutExtension(bm.scenePath);
-                        EditorGUI.LabelField(new Rect(0, y, Mathf.Min(w - 54, 300), 18),
-                            $"{bm.label}  —  {scene}", EditorStyles.miniLabel);
-                        if (GUI.Button(new Rect(Mathf.Min(w - 54, 300) + 4, y, 46, 18), "Delete", EditorStyles.miniButton))
+
+                        if (_renamingBookmarkIdx == i)
                         {
-                            db.bookmarks.RemoveAt(i);
-                            SceneBookmarkStorage.Save();
-                            break;
+                            // ── inline text field ─────────────────────────────
+                            GUI.SetNextControlName("BmRename");
+                            string edited = EditorGUI.TextField(new Rect(0, y, labelW, 18), _renameBuffer);
+                            if (edited != _renameBuffer) _renameBuffer = edited;
+
+                            bool confirm = GUI.Button(new Rect(labelW + 4, y, 42, 18), "OK", EditorStyles.miniButton);
+                            bool cancel  = GUI.Button(new Rect(labelW + 50, y, 50, 18), "Cancel", EditorStyles.miniButton);
+
+                            // also confirm on Enter, cancel on Escape
+                            if (Event.current.type == EventType.KeyDown)
+                            {
+                                if (Event.current.keyCode == KeyCode.Return  || Event.current.keyCode == KeyCode.KeypadEnter) { confirm = true; Event.current.Use(); }
+                                if (Event.current.keyCode == KeyCode.Escape)                                                  { cancel  = true; Event.current.Use(); }
+                            }
+
+                            if (confirm)
+                            {
+                                bm.label = _renameBuffer.Trim().Length > 0 ? _renameBuffer.Trim() : bm.label;
+                                SceneBookmarkStorage.Save();
+                                MainToolbar.Refresh("BetterUnity/Bookmarks");
+                                _renamingBookmarkIdx = -1;
+                            }
+                            else if (cancel)
+                            {
+                                _renamingBookmarkIdx = -1;
+                            }
                         }
+                        else
+                        {
+                            // ── normal row ────────────────────────────────────
+                            EditorGUI.LabelField(new Rect(0, y, labelW, 18),
+                                $"{bm.label}  —  {scene}", EditorStyles.miniLabel);
+
+                            if (GUI.Button(new Rect(labelW + 4, y, 58, 18), "Rename", EditorStyles.miniButton))
+                            {
+                                _renamingBookmarkIdx = i;
+                                _renameBuffer        = bm.label;
+                                EditorGUI.FocusTextInControl("BmRename");
+                            }
+                            if (GUI.Button(new Rect(labelW + 66, y, 52, 18), "Delete", EditorStyles.miniButton))
+                            {
+                                if (_renamingBookmarkIdx == i) _renamingBookmarkIdx = -1;
+                                db.bookmarks.RemoveAt(i);
+                                SceneBookmarkStorage.Save();
+                                MainToolbar.Refresh("BetterUnity/Bookmarks");
+                                break;
+                            }
+                        }
+
                         y += 22;
                     }
                     y += 4;
                     if (GUI.Button(new Rect(0, y, 130, 22), "Clear All Bookmarks", EditorStyles.miniButton))
                     {
                         if (EditorUtility.DisplayDialog("Clear Bookmarks", "Delete all bookmarks?", "Clear", "Cancel"))
-                        { db.bookmarks.Clear(); SceneBookmarkStorage.Save(); }
+                        {
+                            db.bookmarks.Clear();
+                            SceneBookmarkStorage.Save();
+                            _renamingBookmarkIdx = -1;
+                            MainToolbar.Refresh("BetterUnity/Bookmarks");
+                        }
                     }
                 }
             }

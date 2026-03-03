@@ -11,6 +11,11 @@ using UnityEngine.SceneManagement;
 
 namespace LazyCat.BetterUnity
 {
+    // ── Editor FPS Cap via Player Loop + background thread ────────────────────
+    // Application.targetFrameRate is ignored by the editor entirely.
+    // The only reliable way to cap editor FPS is to stall the player loop
+    // using Thread.Sleep on a background thread synced to EarlyUpdate.
+
     [InitializeOnLoad]
     public static class ToolbarModule
     {
@@ -209,6 +214,7 @@ namespace LazyCat.BetterUnity
             }
 
             menu.AddItem(new GUIContent("Save Current View..."), false, SaveCurrentView);
+            menu.AddItem(new GUIContent("Manage Bookmarks..."),  false, () => BookmarkManagerWindow.Open());
             menu.DropDown(rect);
         }
 
