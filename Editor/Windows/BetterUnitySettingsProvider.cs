@@ -570,15 +570,6 @@ namespace LazyCat.BetterUnity
                     Color newLC = EditorGUI.ColorField(new Rect(100, y, Mathf.Min(w - 104, 140), 16), BetterUnityPrefs.HierarchyLineColor);
                     if (newLC != BetterUnityPrefs.HierarchyLineColor) { BetterUnityPrefs.HierarchyLineColor = newLC; EditorApplication.RepaintHierarchyWindow(); }
                     y += 22;
-
-                    float indW = SettingsSlider(ref y, w, new GUIContent("Indent Calibration", "Adjust if lines appear misaligned. Match this to your hierarchy indent width (default 14)."), BetterUnityPrefs.HierarchyIndentWidth, 10f, 22f);
-                    if (!Mathf.Approximately(indW, BetterUnityPrefs.HierarchyIndentWidth)) { BetterUnityPrefs.HierarchyIndentWidth = indW; EditorApplication.RepaintHierarchyWindow(); }
-                    EditorGUI.LabelField(new Rect(0, y, w, 16), $"{BetterUnityPrefs.HierarchyIndentWidth:F1} px", new GUIStyle(EditorStyles.centeredGreyMiniLabel));
-                    y += 18;
-
-                    if (GUI.Button(new Rect(0, y, 80, 18), "Reset  14px", EditorStyles.miniButton))
-                    { BetterUnityPrefs.HierarchyIndentWidth = 14f; EditorApplication.RepaintHierarchyWindow(); }
-                    y += 26;
                 }
 
                 y += 6;
