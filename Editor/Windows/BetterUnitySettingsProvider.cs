@@ -1,5 +1,6 @@
 using System.IO;
 using UnityEditor;
+using UnityEditor.Toolbars;
 using UnityEngine;
 
 namespace LazyCat.BetterUnity
@@ -39,7 +40,13 @@ namespace LazyCat.BetterUnity
                 case 2: BetterUnityPrefs.BulkRenameEnabled          = val; break;
                 case 3: BetterUnityPrefs.AlignToGroundEnabled = val; break;
                 case 4: BetterUnityPrefs.TransformCopyPasteEnabled  = val; break;
-                case 5: BetterUnityPrefs.ToolbarEnabled             = val; break;
+                case 5: BetterUnityPrefs.ToolbarEnabled = val;
+                    MainToolbar.Refresh("BetterUnity/Screenshot");
+                    MainToolbar.Refresh("BetterUnity/SceneSwitcher");
+                    MainToolbar.Refresh("BetterUnity/Bookmarks");
+                    MainToolbar.Refresh("BetterUnity/TimeScale");
+                    MainToolbar.Refresh("BetterUnity/FpsCap");
+                    break;
                 case 6: BetterUnityPrefs.FolderIconEnabled = val; EditorApplication.RepaintProjectWindow(); break;
                 case 7: BetterUnityPrefs.HierarchyEnabled = val; EditorApplication.RepaintHierarchyWindow(); break;
 
@@ -181,6 +188,12 @@ namespace LazyCat.BetterUnity
                 y += 12;
                 if (GUI.Button(new Rect(0, y, 90, 22), "Save Now", EditorStyles.miniButton))
                     AutoSaveModule.ForceSave();
+                if (GUI.Button(new Rect(96, y, 90, 22), "Reset Defaults", EditorStyles.miniButton))
+                {
+                    BetterUnityPrefs.AutoSaveInterval         = 120f;
+                    BetterUnityPrefs.AutoSaveShowNotification = true;
+                    AutoSaveModule.OnSettingsChanged();
+                }
                 y += 30;
             }
 
@@ -227,6 +240,15 @@ namespace LazyCat.BetterUnity
 
                 if (GUI.Button(new Rect(0, y, 150, 22), "Open Task List Window", EditorStyles.miniButton))
                     TaskListWindow.Open();
+                if (GUI.Button(new Rect(156, y, 100, 22), "Reset Defaults", EditorStyles.miniButton))
+                {
+                    s.confirmOnDelete            = true;
+                    s.autoMoveCompletedToBacklog = false;
+                    s.showDeadlineWarning        = true;
+                    s.deadlineWarnDays           = 2;
+                    s.defaultLabel               = "";
+                    TaskListStorage.MarkDirty();
+                }
                 y += 32;
 
                 y = SectionLabel(y, "Data");
@@ -304,6 +326,13 @@ namespace LazyCat.BetterUnity
                 y += 8;
                 if (GUI.Button(new Rect(0, y, 130, 22), "Align Selection Now", EditorStyles.miniButton))
                     AlignToGroundModule.AlignSelected();
+                if (GUI.Button(new Rect(136, y, 100, 22), "Reset Defaults", EditorStyles.miniButton))
+                {
+                    BetterUnityPrefs.AlignRotationToNormal = true;
+                    BetterUnityPrefs.AlignSamplesPerAxis   = 7;
+                    BetterUnityPrefs.AlignMinNormalDot     = 0.3f;
+                    BetterUnityPrefs.AlignGroundLayers     = ~0;
+                }
                 y += 30;
 
                 y += 4;
@@ -323,19 +352,19 @@ namespace LazyCat.BetterUnity
                 y = SectionLabel(y, "Elements");
 
                 bool ss = SettingsToggle(ref y, w, new GUIContent("Screenshot Button"),  BetterUnityPrefs.ToolbarScreenshotEnabled);
-                if (ss != BetterUnityPrefs.ToolbarScreenshotEnabled) BetterUnityPrefs.ToolbarScreenshotEnabled = ss;
+                if (ss != BetterUnityPrefs.ToolbarScreenshotEnabled) { BetterUnityPrefs.ToolbarScreenshotEnabled = ss; MainToolbar.Refresh("BetterUnity/Screenshot"); }
 
                 bool sc = SettingsToggle(ref y, w, new GUIContent("Scene Switcher"),     BetterUnityPrefs.ToolbarSceneSwitcherEnabled);
-                if (sc != BetterUnityPrefs.ToolbarSceneSwitcherEnabled) BetterUnityPrefs.ToolbarSceneSwitcherEnabled = sc;
+                if (sc != BetterUnityPrefs.ToolbarSceneSwitcherEnabled) { BetterUnityPrefs.ToolbarSceneSwitcherEnabled = sc; MainToolbar.Refresh("BetterUnity/SceneSwitcher"); }
 
                 bool bk = SettingsToggle(ref y, w, new GUIContent("Scene Bookmarks"),    BetterUnityPrefs.ToolbarBookmarksEnabled);
-                if (bk != BetterUnityPrefs.ToolbarBookmarksEnabled) BetterUnityPrefs.ToolbarBookmarksEnabled = bk;
+                if (bk != BetterUnityPrefs.ToolbarBookmarksEnabled) { BetterUnityPrefs.ToolbarBookmarksEnabled = bk; MainToolbar.Refresh("BetterUnity/Bookmarks"); }
 
                 bool ts = SettingsToggle(ref y, w, new GUIContent("Time Scale Slider"),  BetterUnityPrefs.ToolbarTimeScaleEnabled);
-                if (ts != BetterUnityPrefs.ToolbarTimeScaleEnabled) BetterUnityPrefs.ToolbarTimeScaleEnabled = ts;
+                if (ts != BetterUnityPrefs.ToolbarTimeScaleEnabled) { BetterUnityPrefs.ToolbarTimeScaleEnabled = ts; MainToolbar.Refresh("BetterUnity/TimeScale"); }
 
                 bool fc = SettingsToggle(ref y, w, new GUIContent("FPS Cap Slider"),     BetterUnityPrefs.ToolbarFpsCapEnabled);
-                if (fc != BetterUnityPrefs.ToolbarFpsCapEnabled) BetterUnityPrefs.ToolbarFpsCapEnabled = fc;
+                if (fc != BetterUnityPrefs.ToolbarFpsCapEnabled) { BetterUnityPrefs.ToolbarFpsCapEnabled = fc; MainToolbar.Refresh("BetterUnity/FpsCap"); }
 
                 y += 8;
                 DrawHelpBox(y, w, "Changes require a domain reload. Use the toolbar overflow menu ( \u22ee ) to pin elements.", MessageType.Info);
@@ -403,6 +432,19 @@ namespace LazyCat.BetterUnity
                 y += 8;
                 if (GUI.Button(new Rect(0, y, 120, 22), "Capture Now", EditorStyles.miniButton))
                     ScreenshotModule.Capture();
+                if (GUI.Button(new Rect(126, y, 100, 22), "Reset Defaults", EditorStyles.miniButton))
+                {
+                    var def = new ScreenshotSettings();
+                    s.target             = def.target;
+                    s.hideUI             = def.hideUI;
+                    s.useCustomSize      = def.useCustomSize;
+                    s.customWidth        = def.customWidth;
+                    s.customHeight       = def.customHeight;
+                    s.selectedPresetIndex= def.selectedPresetIndex;
+                    s.outputPath         = def.outputPath;
+                    s.openAfterCapture   = def.openAfterCapture;
+                    ToolbarStorage.Save();
+                }
                 y += 32;
 
                 y = SectionLabel(y, "Scene Bookmarks");
@@ -472,7 +514,7 @@ namespace LazyCat.BetterUnity
                     new GUIStyle(EditorStyles.centeredGreyMiniLabel));
                 y += 20;
 
-                if (GUI.Button(new Rect(0, y, 100, 20), "Reset to 100%", EditorStyles.miniButton))
+                if (GUI.Button(new Rect(0, y, 100, 20), "Reset Defaults", EditorStyles.miniButton))
                 {
                     BetterUnityPrefs.FolderIconScale = 1f;
                     EditorApplication.RepaintProjectWindow();
@@ -592,7 +634,22 @@ namespace LazyCat.BetterUnity
                 bool toggle = SettingsToggle(ref y, w, new GUIContent("Active Toggle", "Checkbox on the right to toggle active state without selecting the object."), BetterUnityPrefs.HierarchyActiveToggleEnabled);
                 if (toggle != BetterUnityPrefs.HierarchyActiveToggleEnabled) { BetterUnityPrefs.HierarchyActiveToggleEnabled = toggle; EditorApplication.RepaintHierarchyWindow(); }
 
-                y += 6;
+                y += 8;
+                if (GUI.Button(new Rect(0, y, 100, 22), "Reset Defaults", EditorStyles.miniButton))
+                {
+                    BetterUnityPrefs.HierarchyZebraEnabled          = true;
+                    BetterUnityPrefs.HierarchyZebraColor            = new Color(0f, 0f, 0f, 0.07f);
+                    BetterUnityPrefs.HierarchyLinesEnabled          = true;
+                    BetterUnityPrefs.HierarchyLineColor             = new Color(0.32f, 0.32f, 0.38f, 0.62f);
+                    BetterUnityPrefs.HierarchyComponentIconsEnabled = true;
+                    BetterUnityPrefs.HierarchyIconCap               = 4;
+                    BetterUnityPrefs.HierarchyIconOpacity           = 0.75f;
+                    BetterUnityPrefs.HierarchyActiveToggleEnabled   = true;
+                    BetterUnityPrefs.HierarchyDimInactiveEnabled    = true;
+                    HierarchyModule.InvalidateCaches();
+                    EditorApplication.RepaintHierarchyWindow();
+                }
+                y += 30;
 
                 // ── Object styles ─────────────────────────────────────────
                 y = SectionLabel(y, "Object Styles");
