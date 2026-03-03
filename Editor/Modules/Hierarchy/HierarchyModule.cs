@@ -184,13 +184,13 @@ namespace LazyCat.BetterUnity
             float indentW = BetterUnityPrefs.HierarchyIndentWidth;
             Color col     = BetterUnityPrefs.HierarchyLineColor;
             float midY    = r.y + r.height * 0.5f;
-            float ownX    = r.x - indentW * 0.5f;
+            float ownX    = r.x - indentW - 10f;
 
             bool isLast = go.transform.parent != null &&
                           go.transform.GetSiblingIndex() == go.transform.parent.childCount - 1;
 
             EditorGUI.DrawRect(new Rect(ownX, r.y, 1f, isLast ? r.height * 0.5f + 1f : r.height), col);
-            EditorGUI.DrawRect(new Rect(ownX + 1f, midY, indentW * 0.5f - 1f, 1f), col);
+            EditorGUI.DrawRect(new Rect(ownX + 1f, midY, indentW * 0.28f, 1f), col);
 
             Transform ancestor = go.transform.parent;
             for (int steps = 1; steps < realDepth; steps++)
