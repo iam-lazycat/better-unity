@@ -54,6 +54,13 @@ Makes the Hierarchy window actually useful. Adds zebra striping, tree lines, com
 
 ## Changelog
 
+#### v5.4.0
+- Added Bookmark Manager window (rename, delete bookmarks)
+- Fixed toolbar elements not hiding when disabled
+- Added Reset Defaults buttons to all settings modules
+- Fixed hierarchy tree lines overlapping expand arrow
+- Removed indent calibration slider (no longer needed)
+
 #### v5.3.0
 - Added Reddit and Instagram links to About window
 - Toolbar: added FPS cap control
@@ -103,3 +110,4 @@ Makes the Hierarchy window actually useful. Adds zebra striping, tree lines, com
 ---
 
 *made by Lazy Cat — too lazy to write more, just try it out*
+
