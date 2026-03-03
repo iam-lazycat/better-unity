@@ -7,7 +7,7 @@ namespace LazyCat.BetterUnity
     {
         // ── Constants ─────────────────────────────────────────────────────────
 
-        const string Version     = "5.3.0v";
+        const string Version     = "5.4.0v";
         const string Creator     = "Lazy Cat";
         const string Description = "A collection of Unity editor tools built to make your workflow faster, cleaner, and a little less painful.";
 
