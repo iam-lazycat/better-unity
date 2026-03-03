@@ -1,13 +1,17 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.Toolbars;
 using UnityEngine;
+using UnityEngine.LowLevel;
 using UnityEngine.SceneManagement;
 
 namespace LazyCat.BetterUnity
 {
+    [InitializeOnLoad]
     public static class ToolbarModule
     {
         const string K_Screenshot    = "BetterUnity/Screenshot";
@@ -15,6 +19,60 @@ namespace LazyCat.BetterUnity
         const string K_Bookmarks     = "BetterUnity/Bookmarks";
         const string K_TimeScale     = "BetterUnity/TimeScale";
         const string K_FpsCap        = "BetterUnity/FpsCap";
+
+        // ── FPS cap internals ─────────────────────────────────────────────
+        static AutoResetEvent _sync;
+        static int            _intervalMs = 0;   // 0 = uncapped
+
+        static ToolbarModule()
+        {
+            // Start the background throttle thread
+            var t = new Thread(ThrottleThread) { IsBackground = true };
+            t.Start();
+
+            // Inject our update system into EarlyUpdate
+            var system = new PlayerLoopSystem
+            {
+                type           = typeof(ToolbarModule),
+                updateDelegate = FpsCapUpdate
+            };
+
+            var loop = PlayerLoop.GetCurrentPlayerLoop();
+            for (int i = 0; i < loop.subSystemList.Length; i++)
+            {
+                ref var phase = ref loop.subSystemList[i];
+                if (phase.type == typeof(UnityEngine.PlayerLoop.EarlyUpdate))
+                {
+                    phase.subSystemList = phase.subSystemList.Concat(new[] { system }).ToArray();
+                    break;
+                }
+            }
+            PlayerLoop.SetPlayerLoop(loop);
+
+            // Apply saved cap value on load
+            ApplyFpsCap(BetterUnityPrefs.ToolbarFpsCapValue);
+        }
+
+        static void ThrottleThread()
+        {
+            _sync = new AutoResetEvent(true);
+            while (true)
+            {
+                int ms = _intervalMs;
+                Thread.Sleep(ms > 0 ? ms : 1);
+                _sync.Set();
+            }
+        }
+
+        static void FpsCapUpdate()
+        {
+            if (_sync == null) return;
+            if (!BetterUnityPrefs.ToolbarEnabled) return;
+            if (!BetterUnityPrefs.ToolbarFpsCapEnabled) return;
+            if (_intervalMs <= 0) return;       // uncapped — don't stall
+            if (Time.captureDeltaTime != 0) return; // recording mode — don't interfere
+            _sync.WaitOne();
+        }
 
         // ── Screenshot ────────────────────────────────────────────────────
 
@@ -229,19 +287,16 @@ namespace LazyCat.BetterUnity
 
             yield return new MainToolbarLabel(new MainToolbarContent("FPS"));
 
-            int  savedCap     = BetterUnityPrefs.ToolbarFpsCapValue;
-            bool vsyncOff     = QualitySettings.vSyncCount == 0;
-            int  displayValue = vsyncOff ? (Application.targetFrameRate < 0 ? 0 : Application.targetFrameRate) : savedCap;
+            int savedCap     = BetterUnityPrefs.ToolbarFpsCapValue;
+            int displayValue = savedCap <= 0 ? 0 : savedCap;
 
             var slider = new MainToolbarSlider(
-                new MainToolbarContent("FPS Cap", "Target frame rate  (0 = uncapped).  Automatically disables VSync."),
+                new MainToolbarContent("FPS Cap", "Target frame rate for the editor  (0 = uncapped)."),
                 displayValue, 0f, 300f,
                 v =>
                 {
                     int cap = Mathf.RoundToInt(v);
-                    BetterUnityPrefs.ToolbarFpsCapValue = cap;
-                    QualitySettings.vSyncCount          = 0;
-                    Application.targetFrameRate         = cap <= 0 ? -1 : cap;
+                    ApplyFpsCap(cap);
                 });
 
             slider.populateContextMenu = menu =>
@@ -259,8 +314,7 @@ namespace LazyCat.BetterUnity
         static void ApplyFpsCap(int cap)
         {
             BetterUnityPrefs.ToolbarFpsCapValue = cap;
-            QualitySettings.vSyncCount          = 0;
-            Application.targetFrameRate         = cap <= 0 ? -1 : cap;
+            _intervalMs = cap > 0 ? Mathf.Max(1, 1000 / cap) : 0;
             MainToolbar.Refresh(K_FpsCap);
         }
     }
